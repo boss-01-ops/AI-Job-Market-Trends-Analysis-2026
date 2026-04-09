@@ -1,0 +1,305 @@
+import pandas as pd
+#import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+pd.set_option('display.max_columns',None)
+pd.set_option('display.width',None)
+pd.set_option('display.max_colwidth',None)
+
+df=pd.read_csv("D:\\Data_Analysis\\archive\\AI_Job_Market_Trends_2026.csv")
+
+#print(df.columns)
+print(df.head())
+print(f"Number of columns:{len(df.columns)}")
+print(f"Number of rows:{len(df)}")
+
+#print(df.isnull().sum())
+#print(df.info())
+
+# 1. Check complete duplicate rows (all columns identical)
+print('-'*20)
+print("Total Duplicates")
+print('-'*20)
+
+total_duplicates=df.duplicated().sum()
+duplicate_percentage=(total_duplicates/len(df))*100
+print(f"Total duplicates: {total_duplicates}")
+print(f"Duplicates in percenatge: {duplicate_percentage}")
+
+
+#Skill_check
+skill_columns =['skills_python','skills_sql','skills_deep_learning','skills_cloud']
+skill_demand=df[skill_columns].sum().sort_values(ascending=False)
+print('='*50)
+print("Most demanded skils:")
+print('='*50)
+print(skill_demand)
+
+#Analyze skill by job
+print('='*50)
+print("Skills by job title: ")
+print('='*50)
+print(df.groupby('job_title')[skill_columns].mean().round(2))
+
+# Count jobs requiring both Python and SQL
+python_sql_count = df[(df['skills_python'] == 1) & (df['skills_sql'] == 1)].shape[0]
+print(f"\nJobs requiring both Python and SQL: {python_sql_count}")
+
+# Count jobs requiring both Python and deep_learning
+python_deep_learning_cont = df[(df['skills_python']==1) &(df['skills_deep_learning']==1)].shape[0]
+print(f"\nJobs requiring both Python and Deep_learning:{python_deep_learning_cont}")
+print('='*50)
+
+# Analyse salary by job
+
+print(df.groupby('job_title')['salary'].mean().round(2))
+
+#SKILL WISE SALARY
+Skill_salary=df.groupby(skill_columns)['salary'].mean().reset_index()
+print(Skill_salary)
+
+#print(df.groupby('Startup')['Retail'].mean().reset_index())
+print('='*50)
+print("\nINDUSTRY WISE COMPANIES")
+print('='*50)
+
+Company_index=df.groupby('company_size')['company_industry'].count().reset_index()
+print(Company_index)
+
+print('='*50)
+print("\nIndustry-wise company count")
+print('='*50)
+# Industry-wise company count
+industry_companies = df.groupby('company_industry')['company_size'].count().reset_index(name='company_count')
+print(industry_companies.sort_values('company_count', ascending=False))
+
+
+
+
+# Set visualization style
+plt.style.use('seaborn-v0_8-darkgrid')
+sns.set_palette("husl")
+
+# Load your data
+df = pd.read_csv("D:\\Data_Analysis\\archive\\AI_Job_Market_Trends_2026.csv")
+
+# Set display options
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', None)
+pd.set_option('display.max_colwidth', None)
+
+# ============================================================================
+# SKIMMY SUMMARY
+# ============================================================================
+print("="*80)
+print("SKIMMY SUMMARY REPORT")
+print("="*80)
+
+try:
+    import skimpy
+    print("\nGenerating Skimpy Summary...")
+    skimpy.skim(df)
+except ImportError:
+    print("Skimpy not installed. Install with: pip install skimpy")
+except Exception as e:
+    print(f"Error with skimpy: {e}")
+
+# ============================================================================
+# PANDAS PROFILING REPORT
+# ============================================================================
+print("\n" + "="*80)
+print("PANDAS PROFILING REPORT")
+print("="*80)
+
+try:
+    from pandas_profiling import ProfileReport
+    
+    print("\nGenerating Pandas Profiling Report...")
+    profile = ProfileReport(df, title="AI Job Market Trends Report", explorative=True)
+    
+    # Save report as HTML file
+    profile.to_file("ai_job_market_report.html")
+    print("✅ Report saved as 'ai_job_market_report.html'")
+    print("Open this file in your browser to view the interactive report")
+except ImportError:
+    print("Pandas profiling not installed. Install with: pip install pandas-profiling")
+except Exception as e:
+    print(f"Error with pandas profiling: {e}")
+
+# ============================================================================
+# DATA VISUALIZATIONS
+# ============================================================================
+
+# Create a figure with multiple subplots
+fig = plt.figure(figsize=(20, 16))
+
+# ===== 1. Industry-wise Company Count =====
+plt.subplot(3, 3, 1)
+industry_companies = df.groupby('company_industry')['company_size'].count().reset_index(name='company_count')
+industry_companies = industry_companies.sort_values('company_count', ascending=False).head(10)
+plt.barh(industry_companies['company_industry'], industry_companies['company_count'], color='skyblue')
+plt.xlabel('Number of Companies')
+plt.title('Top 10 Industries by Company Count')
+plt.gca().invert_yaxis()
+
+# ===== 2. Company Size Distribution =====
+plt.subplot(3, 3, 2)
+company_size_counts = df['company_size'].value_counts()
+plt.pie(company_size_counts.values, labels=company_size_counts.index, autopct='%1.1f%%', startangle=90)
+plt.title('Company Size Distribution')
+
+# ===== 3. Most Demanded Skills =====
+plt.subplot(3, 3, 3)
+skill_columns = ['skills_python', 'skills_sql', 'skills_deep_learning', 'skills_cloud']
+skill_demand = df[skill_columns].sum().sort_values(ascending=False)
+skill_labels = [col.replace('skills_', '').replace('_', ' ').title() for col in skill_demand.index]
+plt.bar(skill_labels, skill_demand.values, color='lightcoral')
+plt.xlabel('Skills')
+plt.ylabel('Number of Jobs')
+plt.title('Most Demanded Skills')
+plt.xticks(rotation=45)
+
+# ===== 4. Average Salary by Job Title =====
+plt.subplot(3, 3, 4)
+salary_by_job = df.groupby('job_title')['salary'].mean().round(2).sort_values(ascending=False).head(10)
+plt.barh(salary_by_job.index, salary_by_job.values, color='lightgreen')
+plt.xlabel('Average Salary ($)')
+plt.title('Top 10 Job Titles by Average Salary')
+plt.gca().invert_yaxis()
+
+# ===== 5. Skills by Job Title (Heatmap) =====
+plt.subplot(3, 3, 5)
+skills_by_job = df.groupby('job_title')[skill_columns].mean().round(2)
+sns.heatmap(skills_by_job, annot=True, fmt='.2f', cmap='YlOrRd', cbar_kws={'label': 'Proportion of Jobs'})
+plt.title('Skill Requirements by Job Title')
+plt.tight_layout()
+
+# ===== 6. Salary Distribution =====
+plt.subplot(3, 3, 6)
+plt.hist(df['salary'], bins=30, color='goldenrod', edgecolor='black', alpha=0.7)
+plt.xlabel('Salary ($)')
+plt.ylabel('Frequency')
+plt.title('Salary Distribution')
+plt.axvline(df['salary'].mean(), color='red', linestyle='--', label=f"Mean: ${df['salary'].mean():,.0f}")
+plt.legend()
+
+# ===== 7. Hiring Urgency Distribution =====
+plt.subplot(3, 3, 7)
+urgency_counts = df['hiring_urgency'].value_counts()
+colors = ['#ff9999', '#66b3ff', '#99ff99']
+plt.pie(urgency_counts.values, labels=urgency_counts.index, autopct='%1.1f%%', colors=colors, startangle=90)
+plt.title('Hiring Urgency Distribution')
+
+# ===== 8. Experience Level vs Salary =====
+plt.subplot(3, 3, 8)
+exp_salary = df.groupby('experience_level')['salary'].mean().sort_values()
+plt.bar(exp_salary.index, exp_salary.values, color='mediumpurple')
+plt.xlabel('Experience Level')
+plt.ylabel('Average Salary ($)')
+plt.title('Average Salary by Experience Level')
+plt.xticks(rotation=45)
+
+# ===== 9. Remote Type Distribution =====
+plt.subplot(3, 3, 9)
+remote_counts = df['remote_type'].value_counts()
+plt.bar(remote_counts.index, remote_counts.values, color='teal')
+plt.xlabel('Remote Type')
+plt.ylabel('Number of Jobs')
+plt.title('Job Distribution by Remote Type')
+plt.xticks(rotation=45)
+
+plt.tight_layout()
+plt.show()
+
+# ============================================================================
+# ADDITIONAL VISUALIZATIONS
+# ============================================================================
+
+# Create second figure for more detailed analysis
+fig2 = plt.figure(figsize=(20, 10))
+
+# 10. Skill Combination Salary Analysis
+plt.subplot(1, 2, 1)
+df['skill_combo'] = df[skill_columns].apply(
+    lambda x: '+'.join([col.replace('skills_', '')[:3] for col in skill_columns if x[col] == 1]), 
+    axis=1
+)
+df['skill_combo'] = df['skill_combo'].replace('', 'none')
+skill_salary = df.groupby('skill_combo')['salary'].mean().sort_values(ascending=False).head(10)
+plt.barh(skill_salary.index, skill_salary.values, color='coral')
+plt.xlabel('Average Salary ($)')
+plt.title('Top 10 Skill Combinations by Salary')
+plt.gca().invert_yaxis()
+
+# 11. Country-wise Job Distribution
+plt.subplot(1, 2, 2)
+country_counts = df['country'].value_counts().head(10)
+plt.bar(country_counts.index, country_counts.values, color='steelblue')
+plt.xlabel('Country')
+plt.ylabel('Number of Jobs')
+plt.title('Top 10 Countries by Job Opportunities')
+plt.xticks(rotation=45)
+
+plt.tight_layout()
+plt.show()
+
+# ============================================================================
+# CORRELATION ANALYSIS
+# ============================================================================
+print("\n" + "="*80)
+print("CORRELATION ANALYSIS")
+print("="*80)
+
+# Create correlation matrix for numerical columns
+numerical_cols = ['salary', 'job_openings', 'years_experience'] + skill_columns
+correlation_matrix = df[numerical_cols].corr()
+
+plt.figure(figsize=(10, 8))
+sns.heatmap(correlation_matrix, annot=True, fmt='.2f', cmap='coolwarm', center=0, 
+            square=True, linewidths=1, cbar_kws={'label': 'Correlation Coefficient'})
+plt.title('Correlation Matrix: Skills, Salary, and Experience')
+plt.tight_layout()
+plt.show()
+
+# ============================================================================
+# SUMMARY STATISTICS VISUALIZATION
+# ============================================================================
+print("\n" + "="*80)
+print("SUMMARY STATISTICS")
+print("="*80)
+
+# Create summary table
+summary_stats = pd.DataFrame({
+    'Metric': ['Total Jobs', 'Average Salary', 'Median Salary', 'Salary Std Dev', 
+               'Avg Years Experience', 'Avg Openings per Job'],
+    'Value': [
+        len(df),
+        f"${df['salary'].mean():,.2f}",
+        f"${df['salary'].median():,.2f}",
+        f"${df['salary'].std():,.2f}",
+        f"{df['years_experience'].mean():.1f} years",
+        f"{df['job_openings'].mean():.1f}"
+    ]
+})
+print(summary_stats.to_string(index=False))
+
+# Skill demand percentages
+print("\n" + "="*50)
+print("SKILL DEMAND PERCENTAGES")
+print("="*50)
+for skill in skill_columns:
+    skill_name = skill.replace('skills_', '').replace('_', ' ').title()
+    demand_pct = (df[skill].sum() / len(df)) * 100
+    print(f"{skill_name:20}: {demand_pct:.1f}% of jobs require this skill")
+
+# ============================================================================
+# EXPORT REPORTS (Optional)
+# ============================================================================
+
+# Export visualizations as PDF (requires matplotlib to be configured)
+# plt.savefig('ai_job_market_analysis.png', dpi=300, bbox_inches='tight')
+
+print("\n✅ Analysis complete!")
+print("📊 Visualizations displayed")
+print("📄 Pandas profiling report saved as 'ai_job_market_report.html'")
